@@ -1,6 +1,4 @@
 from database.DB_connect import DBConnect
-from model.connessione import Connessione
-from model.products import Prodotto
 
 
 class DAO():
@@ -15,23 +13,25 @@ class DAO():
             return
         result = []
         cursor = cnx.cursor(dictionary=True)
-        query = """SELECT DISTINCT YEAR(Date) AS Year FROM go_daily_sales"""
+        query = """select distinct year(`Date`) as anno
+                    from go_daily_sales"""
         cursor.execute(query)
         for row in cursor:
-            result.append(row["Year"])
+            result.append(row["anno"])
         cursor.close()
         cnx.close()
         return result
 
     @staticmethod
-    def get_colors_dao():
+    def get_colori_dao():
         cnx = DBConnect.get_connection()
         if cnx is None:
             print("Connection error")
             return
         result = []
         cursor = cnx.cursor(dictionary=True)
-        query = """SELECT DISTINCT Product_color FROM go_products"""
+        query = """select distinct Product_color 
+                    from go_products"""
         cursor.execute(query)
         for row in cursor:
             result.append(row["Product_color"])
@@ -40,41 +40,42 @@ class DAO():
         return result
 
     @staticmethod
-    def get_nodes_dao(color):
+    def get_nodi_dao(colore):
         cnx = DBConnect.get_connection()
         if cnx is None:
             print("Connection error")
             return
         result = []
         cursor = cnx.cursor(dictionary=True)
-        query = """SELECT * FROM go_products WHERE Product_color = %s"""
-        cursor.execute(query, (color,))
+        query = """select Product_number 
+                    from go_products
+                    where Product_color = %s"""
+        cursor.execute(query, (colore,))
         for row in cursor:
-            result.append(Prodotto(row["Product_number"], row["Product_line"], row["Product_type"], row["Product"],
-                                   row["Product_brand"], row["Product_color"], row["Unit_cost"], row["Unit_price"]))
+            result.append(row["Product_number"])
         cursor.close()
         cnx.close()
         return result
 
     @staticmethod
-    def get_edges_dao(year, color, idMap):
+    def get_peso_dao(n1, n2, anno):
         cnx = DBConnect.get_connection()
         if cnx is None:
             print("Connection error")
             return
         result = []
         cursor = cnx.cursor(dictionary=True)
-        query = """select g1.Product_number as p1, g2.Product_number as p2
-                    from go_daily_sales g1, go_daily_sales g2 
-                    where g1.Retailer_code = g2.Retailer_code and 
-                    g1.Product_number != g2.Product_number and
-                    g1.Product_number in (SELECT Product_number FROM go_products WHERE Product_color = %s) and 
-                    g2.Product_number in (SELECT Product_number FROM go_products WHERE Product_color = %s) and
-                    g1.`Date` = g2.`Date` and
-                    year(g1.`Date`) = %s"""
-        cursor.execute(query, (color, color, year))
+        query = """select count(distinct date(g1.`Date`)) as peso
+                    from go_daily_sales g1, go_daily_sales g2
+                    where g1.Retailer_code = g2.Retailer_code and
+                    year (g1.`Date`) = %s and
+                    year(g2.`Date`) = %s and 
+                    date(g1.`Date`) = date(g2.`Date`) and 
+                    g1.Product_number = %s and 
+                    g2.Product_number = %s"""
+        cursor.execute(query, (anno, anno, n1, n2))
         for row in cursor:
-            result.append(Connessione(idMap[row["p1"]], idMap[row["p2"]]))
+            result.append(row["peso"])
         cursor.close()
         cnx.close()
         return result

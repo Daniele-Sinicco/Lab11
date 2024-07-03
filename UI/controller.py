@@ -11,25 +11,26 @@ class Controller:
         self._listColor = []
 
     def fillDD(self):
-        for y in self._model.getAnni():
-            self._listYear.append(y)
+        for y in self._model.get_anni():
             self._view._ddyear.options.append(ft.dropdown.Option(key=y, text=str(y)))
-        for c in self._model.getColors():
-            self._listYear.append(c)
+        for c in self._model.get_colori():
             self._view._ddcolor.options.append(ft.dropdown.Option(key=c, text=str(c)))
         self._view.update_page()
 
-
-
-
     def handle_graph(self, e):
-        self._model.build_graph(int(self._view._ddyear.value), self._view._ddcolor.value)
-        self._view.txtOut.controls.append(ft.Text(f"Il grafo creato ha {self._model.graph.number_of_nodes()} nodi e "
-                                                  f"{self._model.graph.number_of_edges()} archi."))
-        for e in self._model.graph.edges():
-            self._view.txtOut.controls.append(ft.Text(f"({e[0]},{e[1]}) peso {self._model.graph[e[0]][e[1]]['weight']}"))
-        self._view.update_page()
-
+        self._view.txtOut.clean()
+        anno = self._view._ddyear.value
+        colore = self._view._ddcolor.value
+        if anno == ""  or anno is None or colore == "" or colore is None:
+            self._view.create_alert("Selezionare entrambi i campi.")
+        else:
+            self._model.build_graph(anno, colore)
+            self._view.txtOut.controls.append(ft.Text(f"Il grafo ha {self._model.get_n_nodes()} nodi e {self._model.get_n_edges()} archi."))
+            for arco in self._model.get_maggiori():
+                self._view.txtOut.controls.append(ft.Text(f"Arco da {arco[0]} a {arco[1]}, peso: {arco[2]["weight"]}"))
+            ripetuti = self._model.get_piu_presenti()
+            self._view.txtOut.controls.append(ft.Text(f"I nodi ripetuti sono: {ripetuti}"))
+            self._view.update_page()
 
     def fillDDProduct(self):
         pass
